@@ -1,0 +1,10 @@
+<Dialogue>
+		<Id>0</Id>
+		<Speaker>Charlie</Speaker>
+		<Length>3</Length>
+		<Speech>
+			<Line>Hello, stranger.</Line>
+			<Line>Click Z to talk to people.</Line>
+			<Line>That is all.</Line>
+		</Speech>
+</Dialogue>
