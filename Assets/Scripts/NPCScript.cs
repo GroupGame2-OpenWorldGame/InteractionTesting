@@ -12,6 +12,8 @@ public class NPCScript : MonoBehaviour {
 	public string dialogueXMLPath;
 	public TextAsset dialogueText;
 
+	public DialogueHead dialogueHead;
+
 	private bool playerInRange = false;
 
 	// Use this for initialization
