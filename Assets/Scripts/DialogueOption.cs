@@ -24,9 +24,4 @@ public class DialogueOption : DialogueElement {
 		get;
 		set;
 	}
-
-	public int NextLineId {
-		get;
-		set ;
-	}
 }

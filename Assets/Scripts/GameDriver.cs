@@ -107,26 +107,29 @@ public class GameDriver : MonoBehaviour {
 			} else {
 				speakerName.text = line.Speaker;
 			}
-			dialogueText.text =line.Text;
+			dialogueText.text = line.Text;
 			return;
 		} else if (currentLine.GetType () == typeof(DialogueIfBranch)) {
 			DialogueIfBranch ifLine = (DialogueIfBranch)currentLine;
-			if (CheckConditions(ifLine.ConditionsToCheck, ifLine.CheckType)) {
+			if (CheckConditions (ifLine.ConditionsToCheck, ifLine.CheckType)) {
 				if (ifLine.TrueLineId == 0) {
 					EndDialogue ();
 					return;
 				}
-				currentLine = currentDialogue.FindLineById(ifLine.TrueLineId);
+				currentLine = currentDialogue.FindLineById (ifLine.TrueLineId);
 				HandleDialogue ();
 				return;
 			} else if (ifLine.FalseLineId == 0) {
 				EndDialogue ();
 				return;
 			} else {
-				currentLine = currentDialogue.FindLineById(ifLine.FalseLineId);;
+				currentLine = currentDialogue.FindLineById (ifLine.FalseLineId);
+				;
 				HandleDialogue ();
 			}
 			return;
+		} else if (currentLine.GetType () == typeof(DialogueOption)) {
+			EndDialogue ();
 		} else {
 			EndDialogue ();
 		}
