@@ -1,39 +1,49 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Serialization;
+using System.Linq;
+using System.Xml.Linq;
 
 public class DialogueHead {
 
-	[XmlAttribute]
-	public int NPCName {
+	[XmlElement]
+	public string NPCName {
 		get ;
-		private set ;
+		set ;
 	}
-
-	public List<int> IdsChecked;
-
-	public DialogueLine FirstLine {
+		
+	public int FirstLineId {
 		get;
-		private set;
+		set;
 	}
 
+	public DialogueElement[] dialogueElements;
+
+	/*
 	public void SetHeadToLines(){
-		FirstLine.SetHead (this);
-	}
-
-	public DialogueLine GetLineById(int id){
-		DialogueLine foundLine = FirstLine.FindLineById (id);
-		/*
-		if (foundDialogueLine == null) {
-			Debug.Log ("No line found with ID of " + id);
+		foreach (DialogueElement ele in dialogueElements) {
+			ele.SetHead (this);
 		}
-		*/
-		IdsChecked.Clear ();
-		return foundLine;
 	}
+	*/
 
-	public DialogueHead(){
-		IdsChecked = new List<int> ();
+	/*
+	public void SetLines(){
+		FirstLine.SetLine ();
+		IdsSet.Clear ();
+	}
+	*/
+
+	public DialogueElement FindLineById(int id){
+		if (id == 0) {
+			return null;
+		}
+		foreach (DialogueElement ele in dialogueElements) {
+			if (ele.Id == id) {
+				return ele;
+			}
+		}
+		return null;
 	}
 }
 

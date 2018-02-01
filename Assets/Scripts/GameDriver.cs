@@ -1,7 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Xml;
+using System;
+using System.Linq;
+using System.Xml.Linq;
 using System.Xml.Serialization;
+using System.Reflection;
+using System.IO;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,13 +30,39 @@ public class GameDriver : MonoBehaviour {
 	public Image npcImage;
 	//[Space(8)]
 
+	[Header("Testing")]
+	public string playerName = "Mel";
+	public bool branchCondition = false;
+
+	//TESTING VARIABLES
+	public bool dialogueHit = false;
+
+	public string[] flagNames;
+	public bool[] flagValues;
+
+	private Dictionary<string, bool> flags;
+
+
 	private NPCScript npcTarget;
-	private Dialogue currentDialogue;
-	private int currentLine = 0;
+	//private Dialogue currentDialogue;
+	//private int currentLine = 0;
+	private DialogueHead currentDialogue;
+	private DialogueElement currentLine;
 
 	// Use this for initialization
 	void Start () {
-		
+		flags = new Dictionary<string, bool>();
+		int flagCount = 0;
+		if(flagNames.Length < flagValues.Length){
+			flagCount = flagNames.Length;
+		}
+		else {
+			flagCount = flagNames.Length;
+		}
+
+		for( int i = 0; i < flagCount; i++){
+			flags.Add(flagNames[i], flagValues[i]);
+		}
 	}
 	
 	// Update is called once per frame
@@ -47,13 +79,16 @@ public class GameDriver : MonoBehaviour {
 		}
 	}
 
+	/*
 	public int DialogueLength{
 		get{ return currentDialogue.Length; }
 		set { currentDialogue.Length = value; }
 	}
+	*/
 
 	public void StartDialogue(){
 		gameState = GameState.Dialogue;
+		/*
 		DeserializeXMLDialogue (npcTarget.dialogueXMLPath);
 		if (gameState == GameState.Dialogue) {
 			speakerName.text = currentDialogue.Speaker;
@@ -61,12 +96,64 @@ public class GameDriver : MonoBehaviour {
 			currentLine = 0;
 			dialogueBox.SetActive (true);
 		}
+		*/
+		if (npcTarget != null) {
+			if (npcTarget.dialogueHead != null) {
+				currentDialogue = npcTarget.dialogueHead;
+				currentLine = currentDialogue.FindLineById (currentDialogue.FirstLineId);
+				dialogueBox.SetActive (true);
+				HandleDialogue ();
+			}
+		}
 	}
 
+	public void HandleDialogue(){
+		if (currentLine.GetType () == typeof(DialogueLine)) {
+			DialogueLine line = (DialogueLine)currentLine;
+			if (line.Speaker == "Player") {
+				speakerName.text = playerName;
+			} else {
+				speakerName.text = line.Speaker;
+			}
+			dialogueText.text =line.Text;
+			return;
+		} else if (currentLine.GetType () == typeof(DialogueIfBranch)) {
+			DialogueIfBranch ifLine = (DialogueIfBranch)currentLine;
+			if (IsFlagTrue(ifLine.ConditionToCheck)) {
+				if (ifLine.TrueLineId == 0) {
+					EndDialogue ();
+					return;
+				}
+				currentLine = currentDialogue.FindLineById(ifLine.TrueLineId);
+				HandleDialogue ();
+				return;
+			} else if (ifLine.FalseLineId == 0) {
+				EndDialogue ();
+				return;
+			} else {
+				currentLine = currentDialogue.FindLineById(ifLine.FalseLineId);;
+				HandleDialogue ();
+			}
+			return;
+		} else {
+			EndDialogue ();
+		}
+		return;
+}
+		
 	public void AdvanceDialogue(){
-		currentLine++;
-		dialogueText.text = currentDialogue.Speech [currentLine];
-		currentDialogue.Length--;
+		if (currentLine.SetWhenDone != null) {
+			SetFlag (currentLine.SetWhenDone, currentLine.SetType);
+			currentLine.TriggerPassed = true;
+		}
+		DialogueLine line = (DialogueLine)currentLine;
+		if (line.NextLineId == 0) {
+			EndDialogue ();
+		} else {
+			currentLine = currentDialogue.FindLineById(line.NextLineId);
+			Debug.Log ("next line");
+			HandleDialogue ();
+		}
 	}
 
 	public void EndDialogue(){
@@ -74,11 +161,35 @@ public class GameDriver : MonoBehaviour {
 		gameState = GameState.OverWorld;
 	}
 
+	public void SetFlag(string flagToSet, string setTo){
+		if (string.Equals ("true", setTo, StringComparison.InvariantCultureIgnoreCase)) {
+			flags [flagToSet] = true;
+		} else {
+			flags [flagToSet] = false;
+		}
+	}
 
+	public bool IsFlagTrue(string flagToCheck){
+		return flags [flagToCheck];
+	}
+
+	public void DialogueHitTrue(){
+		dialogueHit = true;
+	}
+
+	public void CheckDialogueHit(){
+		if (dialogueHit) {
+			branchCondition = true;
+		} else {
+			branchCondition = false;
+		}
+	}
+
+	/*
 	public void DeserializeXMLDialogue(string xmlDialoguePath){
 		System.IO.FileStream filestream;
 		XmlReader reader;
-		XmlSerializer serializer = new XmlSerializer (typeof(Dialogue), new XmlRootAttribute("Dialogue"));
+		XmlSerializer serializer = new XmlSerializer (typeof(DialogueHead), new XmlRootAttribute("DialogueHead"));
 
 		//TextAsset xmlDialogue = (TextAsset)Resources.Load (xmlDialoguePath);
 
@@ -111,5 +222,96 @@ public class GameDriver : MonoBehaviour {
 			Debug.Log (currentDialogue.Speech[1]);
 			Debug.Log (currentDialogue.Speech[2]);
 		}
+	}
+	*/
+	
+	public DialogueHead UnpackDeserializeXMLDialogue(string xmlDialoguePath){
+		System.IO.FileStream filestream;
+		XmlReader reader;
+		XmlSerializer serializer = new XmlSerializer (typeof(DialogueHead), new XmlRootAttribute("DialogueHead"));
+
+		//TextAsset xmlDialogue = (TextAsset)Resources.Load (xmlDialoguePath);
+
+
+		if (System.IO.File.Exists(UnityEngine.Application.dataPath + xmlDialoguePath)) {
+			filestream = new System.IO.FileStream (UnityEngine.Application.dataPath + xmlDialoguePath, System.IO.FileMode.Open);
+			reader = new XmlTextReader (filestream);
+		} else {
+			Debug.Log ("ERROR PARSING XML");
+			EndDialogue ();
+			return null;
+		}
+
+		DialogueHead toReturn;
+
+		try {
+			if (serializer.CanDeserialize (reader)) {
+				toReturn = serializer.Deserialize (reader) as DialogueHead;
+			}
+			else{
+				Debug.Log("Falied");
+				return null;
+			}
+		} finally {
+			reader.Close ();
+			filestream.Close ();
+			filestream.Dispose ();
+		}
+		return toReturn;
+	}
+
+	/*
+	public DialogueHead DeserializeXMLDialogueLinq(TextAsset xmlDialogue){
+		string xmlString = xmlDialogue.text;
+
+		Assembly assem = Assembly.GetExecutingAssembly ();
+		XDocument xDoc = XDocument.Load (new StreamReader (xmlString));
+
+		DialogueHead dialogue = new DialogueHead();
+		dialogue.NPCName = xDoc.Element("NPCName").Value;
+		dialogue.FirstLineId = Int32.Parse(xDoc.Element("FirstLineId").Value);
+
+		dialogue.dialogueElements = xDoc.Descendants("DialogueElement").Select(element => {
+			string typeName = element.Attribute("Type").Value;
+			var type = assem.GetTypes().Where(t => t.Name == typeName).First();
+			DialogueElement e = Activator.CreateInstance(type) as DialogueElement;
+			foreach(var property in element.Descendants()){
+				type.GetProperty(property.Name.LocalName).SetValue(e, property.Value, null);
+			}
+			return e;
+		}).ToArray();
+
+		return dialogue;
+	}
+	*/
+
+	public DialogueHead DeserializeXMLDialogueLinq(string xmlDialoguePath){
+		//string xmlString = xmlDialogue.text;
+
+		Assembly assem = Assembly.GetExecutingAssembly ();
+		XDocument xDoc = XDocument.Load (UnityEngine.Application.dataPath + xmlDialoguePath);
+
+		DialogueHead dialogue = new DialogueHead();
+		//Debug.Log (xDoc.Element("NPCName").Value);
+		dialogue.NPCName =  xDoc.Descendants("NPCName").First().Value;
+		dialogue.FirstLineId = Int32.Parse(xDoc.Descendants("FirstLineId").First().Value);
+
+		dialogue.dialogueElements = xDoc.Descendants("DialogueElement").Select(element => {
+			string typeName = element.Attribute("Type").Value;
+			var type = assem.GetTypes().Where(t => t.Name == typeName).First();
+			DialogueElement e = Activator.CreateInstance(type) as DialogueElement;
+			foreach(var property in element.Descendants()){
+				var setProp = type.GetProperty(property.Name.LocalName);
+				if(setProp.Name.Contains("Id")){
+					setProp.SetValue(e, Int32.Parse(property.Value), null);
+				}
+				else {
+					setProp.SetValue(e, property.Value, null);
+				}
+			}
+			return e;
+		}).ToArray();
+
+		return dialogue;
 	}
 }

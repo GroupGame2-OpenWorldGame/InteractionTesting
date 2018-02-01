@@ -43,12 +43,8 @@ public class PlayerController : MonoBehaviour {
 			if (!selectKeyPressed) {
 				if (Input.GetAxis ("Select") > 0) {
 					selectKeyPressed = true;
-					if (gameDriver.DialogueLength == 1) {
-						gameDriver.EndDialogue ();
-					} else {
-						gameDriver.AdvanceDialogue ();
-					}
-				} 
+					gameDriver.AdvanceDialogue ();
+				}
 			} 
 			break;
 		}
