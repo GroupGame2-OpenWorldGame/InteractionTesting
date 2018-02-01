@@ -38,7 +38,6 @@ public class GameDriver : MonoBehaviour {
 	public bool dialogueHit = false;
 
 	public string[] flagNames;
-	public bool[] flagValues;
 
 	private Dictionary<string, bool> flags;
 
@@ -52,16 +51,9 @@ public class GameDriver : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		flags = new Dictionary<string, bool>();
-		int flagCount = 0;
-		if(flagNames.Length < flagValues.Length){
-			flagCount = flagNames.Length;
-		}
-		else {
-			flagCount = flagNames.Length;
-		}
 
-		for( int i = 0; i < flagCount; i++){
-			flags.Add(flagNames[i], flagValues[i]);
+		for( int i = 0; i < flagNames.Length; i++){
+			flags.Add(flagNames[i], false);
 		}
 	}
 	

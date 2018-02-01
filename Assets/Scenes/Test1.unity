@@ -478,6 +478,11 @@ MonoBehaviour:
   speakerName: {fileID: 1696753551}
   playerImage: {fileID: 362856896}
   npcImage: {fileID: 866780985}
+  playerName: Mel
+  branchCondition: 0
+  dialogueHit: 0
+  flagNames:
+  - TalkedToCharlie
 --- !u!1 &747966238
 GameObject:
   m_ObjectHideFlags: 0
