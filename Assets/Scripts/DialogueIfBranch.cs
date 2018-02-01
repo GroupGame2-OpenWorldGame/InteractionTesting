@@ -5,7 +5,12 @@ using System.Xml.Serialization;
 public class DialogueIfBranch : DialogueElement {
 
 	[XmlElement]
-	public string ConditionToCheck {
+	public string CheckType {
+		get ;
+		set ;
+	}
+
+	public string[] ConditionsToCheck {
 		get;
 		set;
 	}

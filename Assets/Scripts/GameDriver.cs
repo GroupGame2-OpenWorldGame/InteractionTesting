@@ -111,7 +111,7 @@ public class GameDriver : MonoBehaviour {
 			return;
 		} else if (currentLine.GetType () == typeof(DialogueIfBranch)) {
 			DialogueIfBranch ifLine = (DialogueIfBranch)currentLine;
-			if (IsFlagTrue(ifLine.ConditionToCheck)) {
+			if (CheckConditions(ifLine.ConditionsToCheck, ifLine.CheckType)) {
 				if (ifLine.TrueLineId == 0) {
 					EndDialogue ();
 					return;
@@ -161,8 +161,49 @@ public class GameDriver : MonoBehaviour {
 		}
 	}
 
+	public bool CheckConditions(string[] flagsToCheck, string checkType){
+		if (checkType.Equals ("OR")) {
+			return IsOneFlagTrue (flagsToCheck);
+		} else if (checkType.Equals ("AND")) {
+			return AreFlagsTrue (flagsToCheck);
+		}
+		return false;
+	}
+
 	public bool IsFlagTrue(string flagToCheck){
+		if (flagToCheck.StartsWith("!")) {
+			return !(flags[flagToCheck.Split('!')[1]]);
+		}
 		return flags [flagToCheck];
+	}
+
+	public bool IsOneFlagTrue(string[] flagsToCheck){
+		foreach (string f in flagsToCheck) {
+			Debug.Log ("Checking " + f);
+			if (f.StartsWith("!")) {
+				if(!flags[f.Split('!')[1]]){
+					return true;
+				}
+			} else if(flags[f]){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	//array version
+	public bool AreFlagsTrue(string[] flagsToCheck){
+		foreach (string f in flagsToCheck) {
+			Debug.Log ("Checking " + f);
+			if (f.StartsWith("!")) {
+				if(flags[f.Split('!')[1]]){
+					return false;
+				}
+			} else if(!flags[f]){
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public void DialogueHitTrue(){
@@ -292,13 +333,31 @@ public class GameDriver : MonoBehaviour {
 			string typeName = element.Attribute("Type").Value;
 			var type = assem.GetTypes().Where(t => t.Name == typeName).First();
 			DialogueElement e = Activator.CreateInstance(type) as DialogueElement;
+			Debug.Log("pass 0");
 			foreach(var property in element.Descendants()){
-				var setProp = type.GetProperty(property.Name.LocalName);
-				if(setProp.Name.Contains("Id")){
-					setProp.SetValue(e, Int32.Parse(property.Value), null);
-				}
-				else {
-					setProp.SetValue(e, property.Value, null);
+				if(property.Name != "value"){
+					var setProp = type.GetProperty(property.Name.LocalName);
+					if(setProp.PropertyType.IsArray){
+						Debug.Log("Pass 1");
+						if(setProp.Name.Contains("Id")){
+							int[] i = property.Descendants("value").Select(v => {return Int32.Parse(v.Value);}).ToArray();
+							Debug.Log(i);
+							setProp.SetValue(e, i, null);
+						}
+						else {
+							string[] s = property.Descendants("value").Select(v => v.Value).ToArray();
+							setProp.SetValue(e, s, null);
+							Debug.Log("Pass 2");
+						}
+					}
+					else {
+						if(setProp.Name.Contains("Id")){
+							setProp.SetValue(e, Int32.Parse(property.Value), null);
+						}
+						else {
+							setProp.SetValue(e, property.Value, null);
+						}
+					}
 				}
 			}
 			return e;

@@ -3,7 +3,10 @@
 	<FirstLineId>1</FirstLineId>
 	<DialogueElement Type="DialogueIfBranch">
 		<Id>1</Id>
-		<ConditionToCheck>TalkedToCharlie</ConditionToCheck>
+		<CheckType>OR</CheckType>
+		<ConditionsToCheck>
+			<value>TalkedToCharlie</value>
+		</ConditionsToCheck>
 		<TrueLineId>3</TrueLineId>
 		<FalseLineId>2</FalseLineId>>
 	</DialogueElement>
