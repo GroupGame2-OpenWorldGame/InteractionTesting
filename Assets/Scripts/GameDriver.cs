@@ -24,11 +24,13 @@ public class GameDriver : MonoBehaviour {
 
 	[Header("Dialogue")]
 	public GameObject dialogueBox;
+	public GameObject optionsBox;
 	public Text dialogueText;
 	public Text speakerName;
 	public Image playerImage;
 	public Image npcImage;
-	//[Space(8)]
+	public float optionY = 136f;
+	[Space(8)]
 
 	[Header("Testing")]
 	public string playerName = "Mel";
@@ -39,8 +41,9 @@ public class GameDriver : MonoBehaviour {
 
 	public string[] flagNames;
 
-	private Dictionary<string, bool> flags;
+	private Button[] optionButtons;
 
+	private Dictionary<string, bool> flags;
 
 	private NPCScript npcTarget;
 	//private Dialogue currentDialogue;
@@ -55,6 +58,10 @@ public class GameDriver : MonoBehaviour {
 		for( int i = 0; i < flagNames.Length; i++){
 			flags.Add(flagNames[i], false);
 		}
+
+		optionButtons = optionsBox.GetComponentsInChildren<Button> ();
+		CleanUpOptions ();
+		dialogueBox.SetActive (false);
 	}
 	
 	// Update is called once per frame
@@ -102,12 +109,7 @@ public class GameDriver : MonoBehaviour {
 	public void HandleDialogue(){
 		if (currentLine.GetType () == typeof(DialogueLine)) {
 			DialogueLine line = (DialogueLine)currentLine;
-			if (line.Speaker == "Player") {
-				speakerName.text = playerName;
-			} else {
-				speakerName.text = line.Speaker;
-			}
-			dialogueText.text = line.Text;
+			SetLine (line.Speaker, line.Text);
 			return;
 		} else if (currentLine.GetType () == typeof(DialogueIfBranch)) {
 			DialogueIfBranch ifLine = (DialogueIfBranch)currentLine;
@@ -129,12 +131,52 @@ public class GameDriver : MonoBehaviour {
 			}
 			return;
 		} else if (currentLine.GetType () == typeof(DialogueOption)) {
-			EndDialogue ();
+			DialogueOption options = (DialogueOption)currentLine;
+			SetLine (options.Speaker, options.Text);
+			SetUpOptions (options);
+			return;
 		} else {
 			EndDialogue ();
 		}
 		return;
 }
+
+	public void SetLine(string speaker, string text){
+		if (speaker == "Player") {
+			speakerName.text = playerName;
+		} else {
+			speakerName.text = speaker;
+		}
+		dialogueText.text = text;
+		return;
+	}
+
+	public void SetUpOptions(DialogueOption optionsElement){
+		float optionsSpace = Mathf.Max(0, (150 * (optionsElement.Options.Length - 1) - 30)/2);
+		Debug.Log (optionButtons.Length);
+		for (int i = 0; i < optionsElement.Options.Length; i++) {
+			optionButtons[i].gameObject.GetComponent<RectTransform>().localPosition = new Vector3(optionsSpace - (150 * i) ,0,0);
+			optionButtons[i].gameObject.GetComponentsInChildren<Text> ().First ().text = optionsElement.Options [i];
+			optionButtons [i].gameObject.SetActive (true);
+		}
+	}
+
+	public void SelectOption(int optionNumber){
+		DialogueOption options = (DialogueOption)currentLine;
+		if (optionNumber > (options.Options.Length - 1)) {
+			EndDialogue ();
+		} else {
+			currentLine = currentDialogue.FindLineById (options.DecisionLineIds [optionNumber]);
+			CleanUpOptions();
+			HandleDialogue ();
+		}
+	}
+
+	public void CleanUpOptions(){
+		foreach (Button opBut in optionButtons) {
+			opBut.gameObject.SetActive (false);
+		}
+	}
 		
 	public void AdvanceDialogue(){
 		if (currentLine.SetWhenDone != null) {
